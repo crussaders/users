@@ -1,47 +1,56 @@
-import { render, screen } from "@testing-library/react";
-import user from "@testing-library/user-event";
-import UserForm from "./UserForm";
- 
-test("it shows two inputs and a button", () => {
-  // render the component
-  render(<UserForm />);
- 
-  // Manipulate the component or find an element in it
-  const inputs = screen.getAllByRole("textbox");
-  const button = screen.getByRole("button");
- 
-  // Assertion - make sure the component is doing
-  // what we expect it to do
-  expect(inputs).toHaveLength(2);
-  expect(button).toBeInTheDocument();
-});
- 
-test("it calls onUserAdd when the form is submitted", async () => {
-  // NOT THE BEST IMPLEMENTATION
-  const argList = [];
-  const callback = (...args) => {
-    argList.push(args);
-  }
-  // Try to render my component
-  render(<UserForm onUserAdd={callback} />);
- 
-  // Find the two inputs
-  const [nameInput, emailInput] = screen.getAllByRole("textbox");
- 
-  // Simulate typing in a name
-  await user.click(nameInput);
-  await user.keyboard("jane");
- 
-  // Simulate typing in an email
-  await user.click(emailInput);
-  await user.keyboard("jane@jane.com");
- 
-  // Find the button
-  const button = screen.getAllByRole('button');
- 
-  // Simulate clicking the button
-   user.click(button);
- 
-  // Assertion to make sure 'onUserAdd' gets called with email/name
-  expect(argList[0][0]).toEqual({ name: 'jane', email: 'jane@jane.com'});
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+//import '@testing-library/jest-dom/extend-expect';
+import UserForm from './UserForm';
+
+describe('UserForm', () => {
+  test('renders the form correctly', () => {
+    render(<UserForm onUserAdd={() => {}} />);
+    
+    // Check if the name input is rendered
+    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+    
+    // Check if the email input is rendered
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    
+    // Check if the button is rendered
+    expect(screen.getByRole('button', { name: /add user/i })).toBeInTheDocument();
+  });
+
+  test('updates input fields correctly', () => {
+    render(<UserForm onUserAdd={() => {}} />);
+    
+    const nameInput = screen.getByLabelText(/name/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    
+    // Simulate user typing into the name input
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+    expect(nameInput.value).toBe('John Doe');
+    
+    // Simulate user typing into the email input
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+    expect(emailInput.value).toBe('john@example.com');
+  });
+
+  test('submits the form correctly', () => {
+    const mockOnUserAdd = jest.fn();
+    render(<UserForm onUserAdd={mockOnUserAdd} />);
+    
+    const nameInput = screen.getByLabelText(/name/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const button = screen.getByRole('button', { name: /add user/i });
+    
+    // Simulate user typing into the inputs
+    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+    
+    // Simulate form submission
+    fireEvent.click(button);
+    
+    // Check if the onUserAdd function was called with the correct data
+    expect(mockOnUserAdd).toHaveBeenCalledWith({ name: 'John Doe', email: 'john@example.com' });
+    
+    // Ensure the onUserAdd function was called exactly once
+    expect(mockOnUserAdd).toHaveBeenCalledTimes(1);
+  });
 });
